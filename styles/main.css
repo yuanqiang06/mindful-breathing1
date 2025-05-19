@@ -97,20 +97,10 @@ body::after {
     transform: translateZ(0);
     backface-visibility: hidden;
     -webkit-font-smoothing: antialiased;
-}
-
-.breathing-text {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    font-size: 1.2em;
-    font-weight: 500;
-    color: white;
-    z-index: 2;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-    pointer-events: none;
-    margin-top: 150px;
 }
 
 .progress-ring {
@@ -140,6 +130,20 @@ body::after {
     transform: rotate(-90deg);
     transform-origin: 50% 50%;
     transition: stroke-dashoffset 0.3s ease;
+}
+
+.breathing-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.2em;
+    font-weight: 500;
+    color: white;
+    z-index: 2;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    pointer-events: none;
+    margin-top: 180px;
 }
 
 .controls {
@@ -269,17 +273,17 @@ body::after {
 }
 
 @keyframes expand {
-    0% { transform: scale(1) translateZ(0); }
-    100% { transform: scale(1.5) translateZ(0); }
+    0% { transform: scale(1) translate(-50%, -50%); }
+    100% { transform: scale(1.5) translate(-50%, -50%); }
 }
 
 @keyframes pulse {
-    0% { transform: scale(1.5) translateZ(0); }
-    50% { transform: scale(1.6) translateZ(0); }
-    100% { transform: scale(1.5) translateZ(0); }
+    0% { transform: scale(1.5) translate(-50%, -50%); }
+    50% { transform: scale(1.6) translate(-50%, -50%); }
+    100% { transform: scale(1.5) translate(-50%, -50%); }
 }
 
 @keyframes contract {
-    0% { transform: scale(1.5) translateZ(0); }
-    100% { transform: scale(1) translateZ(0); }
+    0% { transform: scale(1.5) translate(-50%, -50%); }
+    100% { transform: scale(1) translate(-50%, -50%); }
 } 
