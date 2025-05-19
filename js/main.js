@@ -37,9 +37,13 @@ class BreathingApp {
             remainingTime: this.config.totalDuration,
             reminderTimer: null,
             speechSynthesis: window.speechSynthesis,
-            bgAudio: null,
+            bgAudio: new Audio('sounds/waves.mp3'),
             defaultSound: 'waves'  // 设置默认音效
         };
+
+        // 初始化音频
+        this.state.bgAudio.loop = true;
+        this.state.bgAudio.volume = 0.5;
 
         // 初始化
         this.init();
@@ -178,11 +182,17 @@ class BreathingApp {
             this.elements.pauseBtn.disabled = false;
             this.startBreathingCycle();
             this.startReminder();
+            
             // 开始播放背景音乐
-            if (this.state.bgAudio) {
-                this.state.bgAudio.currentTime = 0;
-                this.state.bgAudio.play().catch(error => {
+            this.state.bgAudio.currentTime = 0;
+            const playPromise = this.state.bgAudio.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
                     console.log('自动播放被阻止，请点击页面任意位置开始播放');
+                    // 添加一次性点击事件监听器
+                    document.addEventListener('click', () => {
+                        this.state.bgAudio.play();
+                    }, { once: true });
                 });
             }
         }
