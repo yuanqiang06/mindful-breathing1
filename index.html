@@ -9,18 +9,24 @@
 <body>
     <div class="container">
         <div class="breathing-container">
-            <div class="breathing-circle">
-                <div class="breathing-ball"></div>
+            <!-- 进度环 -->
+            <svg class="progress-ring" width="300" height="300">
+                <circle class="progress-ring__circle-bg" cx="150" cy="150" r="140" />
+                <circle class="progress-ring__circle-progress" cx="150" cy="150" r="140" />
+            </svg>
+            
+            <!-- 呼吸球 -->
+            <div class="breathing-circle"></div>
+            <div class="breathing-ball"></div>
+            
+            <!-- 状态文字 -->
+            <div class="breathing-text">
+                <span class="text-content">准备开始</span>
+                <span class="text-highlight"></span>
             </div>
-            <div class="progress-ring">
-                <svg class="progress-ring__circle" width="300" height="300">
-                    <circle class="progress-ring__circle-bg" cx="150" cy="150" r="120"/>
-                    <circle class="progress-ring__circle-progress" cx="150" cy="150" r="120"/>
-                </svg>
-            </div>
-            <div class="breathing-text">准备开始</div>
         </div>
-        
+
+        <!-- 控制按钮 -->
         <div class="controls">
             <button id="startBtn" class="btn primary">开始训练</button>
             <button id="pauseBtn" class="btn" disabled>暂停</button>
@@ -29,29 +35,32 @@
         </div>
     </div>
 
+    <!-- 设置弹窗 -->
     <div id="settingsModal" class="modal">
         <div class="modal-content">
             <h2>设置</h2>
             <div class="settings-group">
-                <label>训练时长（分钟）</label>
+                <label for="durationSelect">训练时长（分钟）</label>
                 <select id="durationSelect">
                     <option value="5">5分钟</option>
                     <option value="10">10分钟</option>
                     <option value="15">15分钟</option>
+                    <option value="custom">自定义</option>
                 </select>
+                <input type="number" id="customDuration" min="1" max="30" value="5" style="display: none;">
             </div>
             <div class="settings-group">
-                <label>提醒间隔（分钟）</label>
+                <label for="reminderInterval">提醒间隔（分钟）</label>
                 <input type="number" id="reminderInterval" min="30" max="180" value="120">
             </div>
             <div class="settings-group">
                 <label>
-                    <input type="checkbox" id="ttsToggle" checked>
+                    <input type="checkbox" id="ttsToggle">
                     启用语音提示
                 </label>
             </div>
             <div class="settings-group">
-                <label>背景音效</label>
+                <label for="bgSoundSelect">背景音效</label>
                 <select id="bgSoundSelect">
                     <option value="none">无</option>
                     <option value="waves">海浪声</option>
@@ -59,11 +68,19 @@
                 </select>
             </div>
             <div class="settings-group">
-                <label>背景图片</label>
+                <label for="bgImageUpload">背景图片</label>
                 <input type="file" id="bgImageUpload" accept="image/*">
                 <button id="removeBgImage" class="btn small">移除背景</button>
             </div>
             <button id="closeSettings" class="btn">关闭</button>
+        </div>
+    </div>
+
+    <!-- 提醒遮罩 -->
+    <div id="reminderOverlay" class="reminder-overlay">
+        <div class="reminder-content">
+            <div class="reminder-text">该休息一下了，让我们做一次深呼吸</div>
+            <button id="reminderClose" class="btn primary">知道了</button>
         </div>
     </div>
 

@@ -2,10 +2,10 @@ class BreathingApp {
     constructor() {
         // 配置参数
         this.config = {
-            inhaleTime: 5000,    // 吸气时间（毫秒）
-            holdTime: 5000,      // 屏息时间（毫秒）
-            exhaleTime: 6000,    // 呼气时间（毫秒）
-            totalDuration: 5 * 60 * 1000,  // 总时长（毫秒）
+            inhaleTime: 4000,     // 吸气时间（4秒）
+            holdTime: 7000,       // 屏息时间（7秒）
+            exhaleTime: 8000,     // 呼气时间（8秒）
+            totalDuration: 5 * 60 * 1000,  // 默认总时长（5分钟）
             reminderInterval: 120 * 60 * 1000,  // 提醒间隔（毫秒）
             defaultBgImage: 'assets/images/default-bg.jpg'  // 默认背景图片
         };
@@ -14,6 +14,8 @@ class BreathingApp {
         this.elements = {
             breathingBall: document.querySelector('.breathing-ball'),
             breathingText: document.querySelector('.breathing-text'),
+            textContent: document.querySelector('.text-content'),
+            textHighlight: document.querySelector('.text-highlight'),
             progressRing: document.querySelector('.progress-ring__circle-progress'),
             startBtn: document.getElementById('startBtn'),
             pauseBtn: document.getElementById('pauseBtn'),
@@ -22,11 +24,14 @@ class BreathingApp {
             settingsModal: document.getElementById('settingsModal'),
             closeSettings: document.getElementById('closeSettings'),
             durationSelect: document.getElementById('durationSelect'),
+            customDuration: document.getElementById('customDuration'),
             reminderInterval: document.getElementById('reminderInterval'),
             ttsToggle: document.getElementById('ttsToggle'),
             bgSoundSelect: document.getElementById('bgSoundSelect'),
             bgImageUpload: document.getElementById('bgImageUpload'),
-            removeBgImage: document.getElementById('removeBgImage')
+            removeBgImage: document.getElementById('removeBgImage'),
+            reminderOverlay: document.getElementById('reminderOverlay'),
+            reminderClose: document.getElementById('reminderClose')
         };
 
         // 状态变量
@@ -36,9 +41,12 @@ class BreathingApp {
             startTime: null,
             remainingTime: this.config.totalDuration,
             reminderTimer: null,
+            reminderTimeout: null,
             speechSynthesis: window.speechSynthesis,
             bgAudio: new Audio('sounds/waves.mp3'),
-            defaultSound: 'waves'  // 设置默认音效
+            defaultSound: 'waves',  // 设置默认音效
+            lastReminderTime: 0,
+            voiceEnabled: true  // 默认开启语音提示
         };
 
         // 初始化音频
@@ -52,8 +60,12 @@ class BreathingApp {
     init() {
         // 设置进度环
         const radius = this.elements.progressRing.r.baseVal.value;
-        this.elements.progressRing.style.strokeDasharray = `${radius * 2 * Math.PI}`;
+        const circumference = radius * 2 * Math.PI;
+        this.elements.progressRing.style.strokeDasharray = `${circumference} ${circumference}`;
         this.elements.progressRing.style.strokeDashoffset = '0';
+
+        // 设置语音提示默认开启
+        this.elements.ttsToggle.checked = true;
 
         // 预加载背景图片
         const preloadImage = new Image();
@@ -84,16 +96,34 @@ class BreathingApp {
         this.elements.resetBtn.addEventListener('click', () => this.reset());
         this.elements.settingsBtn.addEventListener('click', () => this.openSettings());
         this.elements.closeSettings.addEventListener('click', () => this.closeSettings());
+        this.elements.reminderClose.addEventListener('click', () => this.closeReminder());
         
         // 设置变更监听
         this.elements.durationSelect.addEventListener('change', (e) => {
-            this.config.totalDuration = parseInt(e.target.value) * 60 * 1000;
+            if (e.target.value === 'custom') {
+                this.elements.customDuration.style.display = 'block';
+                this.config.totalDuration = parseInt(this.elements.customDuration.value) * 60 * 1000;
+            } else {
+                this.elements.customDuration.style.display = 'none';
+                this.config.totalDuration = parseInt(e.target.value) * 60 * 1000;
+            }
             this.reset();
         });
 
+        this.elements.customDuration.addEventListener('change', (e) => {
+            const value = parseInt(e.target.value);
+            if (value >= 1 && value <= 30) {
+                this.config.totalDuration = value * 60 * 1000;
+                this.reset();
+            }
+        });
+
         this.elements.reminderInterval.addEventListener('change', (e) => {
-            this.config.reminderInterval = parseInt(e.target.value) * 60 * 1000;
-            this.resetReminder();
+            const value = parseInt(e.target.value);
+            if (value >= 30 && value <= 180) {
+                this.config.reminderInterval = value * 60 * 1000;
+                this.resetReminder();
+            }
         });
 
         this.elements.ttsToggle.addEventListener('change', (e) => {
@@ -203,8 +233,8 @@ class BreathingApp {
             this.state.isRunning = false;
             this.elements.startBtn.disabled = false;
             this.elements.pauseBtn.disabled = true;
-            this.elements.breathingBall.style.animation = 'none';
-            this.elements.breathingText.textContent = '已暂停';
+            this.elements.breathingBall.classList.remove('inhale', 'hold', 'exhale');
+            this.elements.textContent.textContent = '已暂停';
             this.stopReminder();
             // 暂停背景音乐
             if (this.state.bgAudio) {
@@ -217,9 +247,9 @@ class BreathingApp {
         this.pause();
         this.state.remainingTime = this.config.totalDuration;
         this.updateProgress(1);
-        this.elements.breathingText.textContent = '准备开始';
+        this.elements.textContent.textContent = '准备开始';
+        this.elements.breathingBall.classList.remove('inhale', 'hold', 'exhale');
         this.elements.breathingBall.style.transform = 'scale(1)';
-        // 重置时停止背景音乐
         if (this.state.bgAudio) {
             this.state.bgAudio.pause();
             this.state.bgAudio.currentTime = 0;
@@ -230,81 +260,113 @@ class BreathingApp {
         const cycle = () => {
             if (!this.state.isRunning) return;
 
-            // 吸气
+            const startTime = performance.now();
+            const totalCycleTime = this.config.inhaleTime + this.config.holdTime + this.config.exhaleTime;
+            
+            // 吸气阶段（4秒）
             this.state.currentPhase = 'inhale';
-            this.elements.breathingText.textContent = '吸气';
-            this.animateBreathingBall('expand');
-            this.speak('吸气');
+            this.elements.textContent.textContent = '吸气';
+            this.animateBreathingBall('inhale');
+            this.speak('请缓慢吸气');
+            this.animateTextHighlight('吸气');
 
             setTimeout(() => {
                 if (!this.state.isRunning) return;
 
-                // 屏息
+                // 屏息阶段（7秒）
                 this.state.currentPhase = 'hold';
-                this.elements.breathingText.textContent = '屏息';
-                this.animateBreathingBall('pulse');
+                this.elements.textContent.textContent = '屏息';
+                this.animateBreathingBall('hold');
                 this.speak('屏息');
+                this.animateTextHighlight('屏息');
 
                 setTimeout(() => {
                     if (!this.state.isRunning) return;
 
-                    // 呼气
+                    // 呼气阶段（8秒）
                     this.state.currentPhase = 'exhale';
-                    this.elements.breathingText.textContent = '呼气';
-                    this.animateBreathingBall('contract');
-                    this.speak('呼气');
+                    this.elements.textContent.textContent = '呼气';
+                    this.animateBreathingBall('exhale');
+                    this.speak('缓慢呼气');
+                    this.animateTextHighlight('呼气');
 
                     setTimeout(() => {
                         if (!this.state.isRunning) return;
-                        this.updateProgress();
-                        if (this.state.remainingTime > 0) {
-                            cycle();
-                        } else {
+                        
+                        // 检查总训练时间
+                        const totalElapsed = performance.now() - this.state.startTime;
+                        if (totalElapsed >= this.config.totalDuration) {
                             this.complete();
+                            return;
                         }
+                        
+                        cycle();
                     }, this.config.exhaleTime);
                 }, this.config.holdTime);
             }, this.config.inhaleTime);
+
+            // 更新进度
+            const updateProgressInterval = setInterval(() => {
+                if (!this.state.isRunning) {
+                    clearInterval(updateProgressInterval);
+                    return;
+                }
+                const totalElapsed = performance.now() - this.state.startTime;
+                const progress = Math.min(1, totalElapsed / this.config.totalDuration);
+                this.updateProgress(progress);
+            }, 16);
         };
 
         cycle();
     }
 
-    animateBreathingBall(action) {
+    animateBreathingBall(phase) {
         const ball = this.elements.breathingBall;
-        ball.style.animation = 'none';
-        void ball.offsetWidth; // 触发重排
-
-        switch (action) {
-            case 'expand':
-                ball.style.animation = `expand ${this.config.inhaleTime}ms ease-in-out`;
-                break;
-            case 'pulse':
-                ball.style.animation = `pulse ${this.config.holdTime}ms ease-in-out`;
-                break;
-            case 'contract':
-                ball.style.animation = `contract ${this.config.exhaleTime}ms ease-in-out`;
-                break;
-        }
+        // 移除所有动画类
+        ball.classList.remove('inhale', 'hold', 'exhale');
+        // 重置transform
+        ball.style.transform = 'scale(1)';
+        // 添加新的动画类
+        requestAnimationFrame(() => {
+            ball.classList.add(phase);
+        });
     }
 
-    updateProgress() {
-        const elapsed = performance.now() - this.state.startTime;
-        this.state.remainingTime = Math.max(0, this.config.totalDuration - elapsed);
-        const progress = this.state.remainingTime / this.config.totalDuration;
-        
+    animateTextHighlight(text) {
+        const highlight = this.elements.textHighlight;
+        highlight.style.width = '0';
+        // 使用 requestAnimationFrame 实现逐字高亮效果
+        let i = 0;
+        const animate = () => {
+            if (i < text.length) {
+                highlight.style.width = `${(i + 1) * 100 / text.length}%`;
+                i++;
+                requestAnimationFrame(animate);
+            }
+        };
+        requestAnimationFrame(animate);
+    }
+
+    updateProgress(progress) {
         const radius = this.elements.progressRing.r.baseVal.value;
         const circumference = radius * 2 * Math.PI;
-        this.elements.progressRing.style.strokeDashoffset = circumference * (1 - progress);
+        const offset = circumference * (1 - progress);
+        this.elements.progressRing.style.strokeDashoffset = offset;
     }
 
     complete() {
         this.state.isRunning = false;
         this.elements.startBtn.disabled = false;
         this.elements.pauseBtn.disabled = true;
-        this.elements.breathingText.textContent = '训练完成';
+        this.elements.textContent.textContent = '训练完成';
+        this.elements.breathingBall.classList.remove('inhale', 'hold', 'exhale');
+        this.elements.breathingBall.style.transform = 'translate(-50%, -50%) scale(1)';
         this.speak('训练完成，辛苦了');
         this.stopReminder();
+        if (this.state.bgAudio) {
+            this.state.bgAudio.pause();
+            this.state.bgAudio.currentTime = 0;
+        }
     }
 
     speak(text) {
@@ -318,8 +380,12 @@ class BreathingApp {
     startReminder() {
         this.stopReminder();
         this.state.reminderTimer = setInterval(() => {
-            this.showReminder();
-        }, this.config.reminderInterval);
+            const now = performance.now();
+            if (now - this.state.lastReminderTime >= this.config.reminderInterval) {
+                this.showReminder();
+                this.state.lastReminderTime = now;
+            }
+        }, 60000); // 每分钟检查一次
     }
 
     stopReminder() {
@@ -327,15 +393,38 @@ class BreathingApp {
             clearInterval(this.state.reminderTimer);
             this.state.reminderTimer = null;
         }
+        if (this.state.reminderTimeout) {
+            clearTimeout(this.state.reminderTimeout);
+            this.state.reminderTimeout = null;
+        }
     }
 
     showReminder() {
         if (!document.hidden) {
+            // 首次提醒：呼吸球轻微脉动
+            this.elements.breathingBall.classList.add('pulse');
             this.speak('该休息一下了，让我们做一次深呼吸');
-            this.elements.breathingBall.style.animation = 'pulse 1s infinite';
+            
+            // 3分钟后未响应：显示全屏遮罩
+            this.state.reminderTimeout = setTimeout(() => {
+                this.elements.reminderOverlay.classList.add('active');
+            }, 3 * 60 * 1000);
+            
+            // 5分钟后未响应：自动暂停
             setTimeout(() => {
-                this.elements.breathingBall.style.animation = '';
-            }, 3000);
+                if (this.state.isRunning) {
+                    this.pause();
+                }
+            }, 5 * 60 * 1000);
+        }
+    }
+
+    closeReminder() {
+        this.elements.reminderOverlay.classList.remove('active');
+        this.elements.breathingBall.classList.remove('pulse');
+        if (this.state.reminderTimeout) {
+            clearTimeout(this.state.reminderTimeout);
+            this.state.reminderTimeout = null;
         }
     }
 
@@ -367,18 +456,18 @@ class BreathingApp {
 // 添加动画关键帧
 const style = document.createElement('style');
 style.textContent = `
-    @keyframes expand {
+    @keyframes inhale {
         0% { transform: scale(1); }
         100% { transform: scale(1.5); }
     }
 
-    @keyframes pulse {
+    @keyframes hold {
         0% { transform: scale(1.5); }
         50% { transform: scale(1.6); }
         100% { transform: scale(1.5); }
     }
 
-    @keyframes contract {
+    @keyframes exhale {
         0% { transform: scale(1.5); }
         100% { transform: scale(1); }
     }

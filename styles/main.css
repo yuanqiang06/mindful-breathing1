@@ -4,6 +4,7 @@
     --text-color: #333;
     --background-color: #f5f5f5;
     --modal-background: rgba(0, 0, 0, 0.5);
+    --reminder-overlay: rgba(255, 215, 0, 0.9);
 }
 
 * {
@@ -64,49 +65,39 @@ body::after {
     width: 300px;
     height: 300px;
     margin: 0 auto 30px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .breathing-circle {
     position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
     width: 200px;
     height: 200px;
     border-radius: 50%;
     background: rgba(255, 215, 0, 0.1);
     will-change: transform;
-    transform: translateZ(0);
     backface-visibility: hidden;
-    -webkit-font-smoothing: antialiased;
 }
 
 .breathing-ball {
     position: absolute;
-    top: 50%;
-    left: 50%;
     width: 100px;
     height: 100px;
     border-radius: 50%;
     background: var(--primary-color);
-    transform: translate(-50%, -50%);
+    transform: scale(1);
+    transform-origin: center;
     will-change: transform;
     backface-visibility: hidden;
-    -webkit-font-smoothing: antialiased;
 }
 
 .progress-ring {
     position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 200px;
-    height: 200px;
-}
-
-.progress-ring__circle {
-    transform: rotate(-90deg);
-    transform-origin: 50% 50%;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
 }
 
 .progress-ring__circle-bg {
@@ -136,14 +127,29 @@ body::after {
     z-index: 2;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     pointer-events: none;
-    margin-top: 180px;
+    margin-top: 170px;
+}
+
+.text-content {
+    position: relative;
+    display: inline-block;
+}
+
+.text-highlight {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.2);
+    transition: width 0.3s ease;
 }
 
 .controls {
     display: flex;
     gap: 10px;
     justify-content: center;
-    margin-top: 20px;
+    margin-top: 40px;
 }
 
 .btn {
@@ -243,6 +249,68 @@ body::after {
     margin-bottom: 5px;
 }
 
+/* 提醒遮罩 */
+.reminder-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--reminder-overlay);
+    z-index: 2000;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.reminder-overlay.active {
+    display: flex;
+    opacity: 1;
+}
+
+.reminder-content {
+    text-align: center;
+    color: white;
+}
+
+.reminder-text {
+    font-size: 1.5em;
+    margin-bottom: 20px;
+}
+
+/* 呼吸动画关键帧 */
+@keyframes inhale {
+    0% { transform: scale(1); }
+    100% { transform: scale(1.5); }
+}
+
+@keyframes hold {
+    0% { transform: scale(1.5); }
+    50% { transform: scale(1.6); }
+    100% { transform: scale(1.5); }
+}
+
+@keyframes exhale {
+    0% { transform: scale(1.5); }
+    100% { transform: scale(1); }
+}
+
+/* 动画类 */
+.breathing-ball.inhale {
+    animation: inhale 4s ease-in-out forwards;
+}
+
+.breathing-ball.hold {
+    animation: hold 7s ease-in-out forwards;
+}
+
+.breathing-ball.exhale {
+    animation: exhale 8s ease-in-out forwards;
+}
+
+/* 响应式设计 */
 @media (max-width: 320px) {
     .breathing-container {
         width: 250px;
@@ -259,24 +327,8 @@ body::after {
         height: 75px;
     }
     
-    .progress-ring__circle {
+    .progress-ring {
         width: 250px;
         height: 250px;
     }
-}
-
-@keyframes expand {
-    0% { transform: translate(-50%, -50%) scale(1); }
-    100% { transform: translate(-50%, -50%) scale(1.5); }
-}
-
-@keyframes pulse {
-    0% { transform: translate(-50%, -50%) scale(1.5); }
-    50% { transform: translate(-50%, -50%) scale(1.6); }
-    100% { transform: translate(-50%, -50%) scale(1.5); }
-}
-
-@keyframes contract {
-    0% { transform: translate(-50%, -50%) scale(1.5); }
-    100% { transform: translate(-50%, -50%) scale(1); }
 } 
