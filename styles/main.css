@@ -64,9 +64,6 @@ body::after {
     width: 300px;
     height: 300px;
     margin: 0 auto 30px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
 }
 
 .breathing-circle {
@@ -78,9 +75,6 @@ body::after {
     height: 200px;
     border-radius: 50%;
     background: rgba(255, 215, 0, 0.1);
-    display: flex;
-    justify-content: center;
-    align-items: center;
     will-change: transform;
     transform: translateZ(0);
     backface-visibility: hidden;
@@ -88,19 +82,17 @@ body::after {
 }
 
 .breathing-ball {
+    position: absolute;
+    top: 50%;
+    left: 50%;
     width: 100px;
     height: 100px;
     border-radius: 50%;
     background: var(--primary-color);
-    transition: all 0.3s ease;
+    transform: translate(-50%, -50%);
     will-change: transform;
-    transform: translateZ(0);
     backface-visibility: hidden;
     -webkit-font-smoothing: antialiased;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
 }
 
 .progress-ring {
@@ -273,17 +265,17 @@ body::after {
 }
 
 @keyframes expand {
-    0% { transform: scale(1) translate(-50%, -50%); }
-    100% { transform: scale(1.5) translate(-50%, -50%); }
+    0% { transform: translate(-50%, -50%) scale(1); }
+    100% { transform: translate(-50%, -50%) scale(1.5); }
 }
 
 @keyframes pulse {
-    0% { transform: scale(1.5) translate(-50%, -50%); }
-    50% { transform: scale(1.6) translate(-50%, -50%); }
-    100% { transform: scale(1.5) translate(-50%, -50%); }
+    0% { transform: translate(-50%, -50%) scale(1.5); }
+    50% { transform: translate(-50%, -50%) scale(1.6); }
+    100% { transform: translate(-50%, -50%) scale(1.5); }
 }
 
 @keyframes contract {
-    0% { transform: scale(1.5) translate(-50%, -50%); }
-    100% { transform: scale(1) translate(-50%, -50%); }
+    0% { transform: translate(-50%, -50%) scale(1.5); }
+    100% { transform: translate(-50%, -50%) scale(1); }
 } 
