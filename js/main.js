@@ -212,7 +212,7 @@ class BreathingApp {
             this.state.currentPhase = 'inhale';
             this.elements.breathingText.textContent = '吸气';
             this.animateBreathingBall('expand');
-            this.speak('请缓慢吸气，感受空气进入肺部');
+            this.speak('吸气');
 
             setTimeout(() => {
                 if (!this.state.isRunning) return;
@@ -221,7 +221,7 @@ class BreathingApp {
                 this.state.currentPhase = 'hold';
                 this.elements.breathingText.textContent = '屏息';
                 this.animateBreathingBall('pulse');
-                this.speak('保持呼吸，感受平静');
+                this.speak('屏息');
 
                 setTimeout(() => {
                     if (!this.state.isRunning) return;
@@ -230,7 +230,7 @@ class BreathingApp {
                     this.state.currentPhase = 'exhale';
                     this.elements.breathingText.textContent = '呼气';
                     this.animateBreathingBall('contract');
-                    this.speak('缓慢呼气，释放压力');
+                    this.speak('呼气');
 
                     setTimeout(() => {
                         if (!this.state.isRunning) return;
