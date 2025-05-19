@@ -64,6 +64,9 @@ body::after {
     width: 300px;
     height: 300px;
     margin: 0 auto 30px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .breathing-circle {
@@ -96,6 +99,20 @@ body::after {
     -webkit-font-smoothing: antialiased;
 }
 
+.breathing-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.2em;
+    font-weight: 500;
+    color: white;
+    z-index: 2;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    pointer-events: none;
+    margin-top: 150px;
+}
+
 .progress-ring {
     position: absolute;
     top: 0;
@@ -123,19 +140,6 @@ body::after {
     transform: rotate(-90deg);
     transform-origin: 50% 50%;
     transition: stroke-dashoffset 0.3s ease;
-}
-
-.breathing-text {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 1.2em;
-    font-weight: 500;
-    color: white;
-    z-index: 2;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-    pointer-events: none;
 }
 
 .controls {
