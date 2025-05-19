@@ -61,6 +61,19 @@ class BreathingApp {
         };
         preloadImage.src = this.config.defaultBgImage;
 
+        // 设置默认音效
+        this.elements.bgSoundSelect.value = this.state.defaultSound;
+        this.changeBackgroundSound(this.state.defaultSound);
+
+        // 添加点击事件监听器以启用音频
+        document.addEventListener('click', () => {
+            if (this.state.bgAudio && this.state.isRunning) {
+                this.state.bgAudio.play().catch(error => {
+                    console.log('音频播放失败');
+                });
+            }
+        }, { once: true });
+
         // 事件监听
         this.elements.startBtn.addEventListener('click', () => this.start());
         this.elements.pauseBtn.addEventListener('click', () => this.pause());
@@ -155,10 +168,6 @@ class BreathingApp {
                 this.pause();
             }
         });
-
-        // 设置默认音效
-        this.elements.bgSoundSelect.value = this.state.defaultSound;
-        this.changeBackgroundSound(this.state.defaultSound);
     }
 
     start() {
@@ -171,7 +180,10 @@ class BreathingApp {
             this.startReminder();
             // 开始播放背景音乐
             if (this.state.bgAudio) {
-                this.state.bgAudio.play();
+                this.state.bgAudio.currentTime = 0;
+                this.state.bgAudio.play().catch(error => {
+                    console.log('自动播放被阻止，请点击页面任意位置开始播放');
+                });
             }
         }
     }
